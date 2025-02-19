@@ -1,101 +1,137 @@
-import Image from "next/image";
+"use client"
+import Dashboard from '@/components/Dashboard';
+import TransactionForm from '@/components/TransactionForm';
+import React, { useEffect, useState } from 'react'
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
-export default function Home() {
+
+
+const page = () => {
+  const [transactionsStats, setTransactionsStats] = useState([])
+  const [transactions, setTransactions] = useState([])
+  const [open, setOpen] = useState(false)
+  const [transactionToEdit, setTransactionToEdit] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setShowCalendar(false); 
+    fetchTransactionStats(date);
+    fetchTransaction(date);
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "This month";
+    const options = { year: 'numeric', month: 'long'};
+    return date.toLocaleDateString(undefined, options);
+  };
+
+  const fetchTransactionStats = async(date = '') =>{
+    try {
+
+      if(date != '') {
+        console.log("date", date, typeof(date));
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+      
+        date = year+"-"+month+"-"+day;
+      }
+
+      const response = await fetch('/api/transactions_stats?date='+date);
+      if(!response.ok) throw new Error("Failed to fetch transactions");
+
+      const data = await response.json();
+      setTransactionsStats(data || {});
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    }
+  }
+  useEffect(() => {
+    fetchTransactionStats()
+  }, [])
+
+  const fetchTransaction = async(date = '') =>{
+    try {
+      if(date != '') {
+        console.log("date", date, typeof(date));
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+      
+        date = year+"-"+month+"-"+day;
+      }
+      const response = await fetch('/api/transactions?date='+date);
+      if(!response.ok) throw new Error("Failed to fetch transactions");
+
+      const data = await response.json();
+      setTransactions([...data]);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    }
+  }
+  useEffect(() => {
+    
+    fetchTransaction()
+  }, [])
+  
+
+
+  const handleUpdate = async (updatedTransaction) => {
+    try {
+      const response = await fetch('/api/transactions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTransaction),
+      });
+  
+      if (response.ok) {
+        const updatedData = await response.json();
+       
+        await fetchTransactions();
+        setTransactionToEdit(null);
+        setOpen(false); 
+      }
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+    }
+  };
+  
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className='pt-5  w-full px-9  flex flex-col gap-5'>
+      <div>
+        <h1 className='text-2xl font-medium'>Welcome back!</h1>
+        <p className='text-gray-500'>It is the best time to manage your finances.</p>
+      </div>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+        <button className='border-[0.5px] border-gray-500 rounded-full px-3 aspect-square'><img src="/calender.svg" alt="" className='w-5'  onClick={() => setShowCalendar(!showCalendar)} /></button>
+        <button className='border-[0.5px] border-gray-500 rounded-full px-4 py-2 font-medium'> {formatDate(selectedDate)}</button>
+        {showCalendar && (
+        <div className="absolute mt-10">
+          <DatePicker
+            selected={selectedDate}
+            onChange={handleDateChange}
+            inline
+            dateFormat="MMMM yyyy"
+            showMonthYearPicker
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      )}
+        </div>
+          {!open &&
+      <button onClick={() => setOpen(true)} className='bg-[#8271fe] flex gap-2 px-3 py-3 rounded-full font-medium text-white text-sm'>
+      <img src="/plus.svg" alt="" className='w-4' />
+      Add new transaction</button>
+      }
+      
+      {open && <TransactionForm setOpen={setOpen} setTransactions={setTransactions} transactionToEdit={transactionToEdit} handleUpdate={handleUpdate} setTransactionToEdit={setTransactionToEdit}/>}
+      </div>
+      <Dashboard transactionsStats={transactionsStats} transactions={transactions}/>
     </div>
-  );
+  )
 }
+
+export default page
