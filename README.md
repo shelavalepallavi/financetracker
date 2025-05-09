@@ -9,8 +9,8 @@ SpendLite is a finance tracker application that allows users to efficiently mana
 - User-friendly interface with responsive design.
 
 ## Tech Stack
-- **Frontend**: Next.js, Tailwind CSS
-- **Charts**: Recharts
+- **Frontend**: Next.js, Tailwind CSS.
+- **Charts**: Recharts.
 
 ## Categories
 - **Food**
